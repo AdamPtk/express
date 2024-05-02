@@ -58,6 +58,56 @@ app.get("/api/products", (req, res) => {
   ]);
 });
 
+app.put("/api/users/:id", (req, res) => {
+  const {
+    body,
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+
+  if (isNaN(parsedId))
+    return res.status(400).send({ msg: "Bad request. Invalid id" });
+
+  const findUserIndex = usersMock.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1) return res.sendStatus(404);
+
+  usersMock[findUserIndex] = { id: parsedId, ...body };
+  return res.sendStatus(200);
+});
+
+app.patch("/api/users/:id", (req, res) => {
+  const {
+    body,
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+
+  if (isNaN(parsedId))
+    return res.status(400).send({ msg: "Bad request. Invalid id" });
+
+  const findUserIndex = usersMock.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1) return res.sendStatus(404);
+
+  usersMock[findUserIndex] = { ...usersMock[findUserIndex], ...body };
+  return res.sendStatus(200);
+});
+
+app.delete("/api/users/:id", (req, res) => {
+  const {
+    params: { id },
+  } = req;
+  const parsedId = parseInt(id);
+
+  if (isNaN(parsedId))
+    return res.status(400).send({ msg: "Bad request. Invalid id" });
+
+  const findUserIndex = usersMock.findIndex((user) => user.id === parsedId);
+  if (findUserIndex === -1) return res.sendStatus(404);
+
+  usersMock.splice(findUserIndex, 1);
+  return res.sendStatus(200);
+});
+
 app.listen(PORT, () => {
   console.log("Listening on port 3000");
 });
