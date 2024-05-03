@@ -1,13 +1,20 @@
 import express from "express";
+import {
+  query,
+  validationResult,
+  matchedData,
+  checkSchema,
+} from "express-validator";
+import { createUserValidationSchema } from "./utils/validationSchemas.mjs";
 
 const app = express();
 
 app.use(express.json());
 
-const loggingMiddleware = (req, res, next) => {
-  console.log(`${req.method} - ${req.url}`);
-  next();
-};
+// const loggingMiddleware = (req, res, next) => {
+//   console.log(`${req.method} - ${req.url}`);
+//   next();
+// };
 
 const resolveIndexByUserId = (req, res, next) => {
   const {
@@ -50,20 +57,36 @@ app.get(
   }
 );
 
-app.get("/api/users", loggingMiddleware, (req, res) => {
-  const {
-    query: { filter, value },
-  } = req;
+app.get(
+  "/api/users",
+  query("filter")
+    .isString()
+    .notEmpty()
+    .withMessage("Must not be empty")
+    .isLength({ min: 3, max: 12 })
+    .withMessage("Must be at least 3-12 characters"),
+  (req, res) => {
+    const result = validationResult(req);
+    const {
+      query: { filter, value },
+    } = req;
 
-  if (filter && value)
-    return res.send(usersMock.filter((user) => user[filter].includes(value)));
+    if (filter && value)
+      return res.send(usersMock.filter((user) => user[filter].includes(value)));
 
-  return res.send(usersMock);
-});
+    return res.send(usersMock);
+  }
+);
 
-app.post("/api/users", (req, res) => {
-  const { body } = req;
-  const newUser = { id: usersMock[usersMock.length - 1].id + 1, ...body };
+app.post("/api/users", checkSchema(createUserValidationSchema), (req, res) => {
+  const result = validationResult(req);
+
+  if (!result.isEmpty()) {
+    return res.status(400).send({ errors: result.array() });
+  }
+
+  const data = matchedData(req);
+  const newUser = { id: usersMock[usersMock.length - 1].id + 1, ...data };
   usersMock.push(newUser);
 
   return res.status(201).send(newUser);
