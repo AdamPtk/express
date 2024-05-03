@@ -1,4 +1,5 @@
 import express from "express";
+import dotenv from "dotenv";
 import {
   query,
   validationResult,
@@ -6,6 +7,8 @@ import {
   checkSchema,
 } from "express-validator";
 import { createUserValidationSchema } from "./utils/validationSchemas.mjs";
+
+dotenv.config();
 
 const app = express();
 
@@ -131,5 +134,5 @@ app.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("Listening on port 3000");
+  console.log(`Listening on port ${PORT}`);
 });
