@@ -5,7 +5,11 @@ import {
   matchedData,
   checkSchema,
 } from "express-validator";
-import { createUserValidationSchema } from "./utils/validationSchemas.mjs";
+import {
+  createUserValidationSchema,
+  modifyUserValidationSchema,
+  updateUserValidationSchema,
+} from "./utils/validationSchemas.mjs";
 
 const app = express();
 
@@ -109,19 +113,36 @@ app.get("/api/products", (req, res) => {
   ]);
 });
 
-app.put("/api/users/:id", resolveIndexByUserId, (req, res) => {
-  const { body, findUserIndex } = req;
+app.put(
+  "/api/users/:id",
+  checkSchema(updateUserValidationSchema),
+  resolveIndexByUserId,
+  (req, res) => {
+    const result = validationResult(req);
 
-  usersMock[findUserIndex] = { id: usersMock[findUserIndex].id, ...body };
-  return res.sendStatus(200);
-});
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
 
-app.patch("/api/users/:id", resolveIndexByUserId, (req, res) => {
-  const { body, findUserIndex } = req;
+    const data = matchedData(req);
+    const { findUserIndex } = req;
 
-  usersMock[findUserIndex] = { ...usersMock[findUserIndex].id, ...body };
-  return res.sendStatus(200);
-});
+    usersMock[findUserIndex] = { id: usersMock[findUserIndex].id, ...data };
+    return res.sendStatus(200);
+  }
+);
+
+app.patch(
+  "/api/users/:id",
+  checkSchema(modifyUserValidationSchema),
+  resolveIndexByUserId,
+  (req, res) => {
+    const { body, findUserIndex } = req;
+
+    usersMock[findUserIndex] = { ...usersMock[findUserIndex].id, ...body };
+    return res.sendStatus(200);
+  }
+);
 
 app.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
   const { findUserIndex } = req;
