@@ -12,6 +12,7 @@ import {
 } from "../utils/validationSchemas.mjs";
 import { usersMock } from "../utils/constants.mjs";
 import { resolveIndexByUserId } from "../utils/middlewares.mjs";
+import { User } from "../mongoose/schemas/user.mjs";
 
 const router = Router();
 
@@ -46,18 +47,21 @@ router.get(
 router.post(
   "/api/users",
   checkSchema(createUserValidationSchema),
-  (req, res) => {
+  async (req, res) => {
     const result = validationResult(req);
 
-    if (!result.isEmpty()) {
-      return res.status(400).send({ errors: result.array() });
-    }
+    if (!result.isEmpty()) return res.send(result.array());
 
     const data = matchedData(req);
-    const newUser = { id: usersMock[usersMock.length - 1].id + 1, ...data };
-    usersMock.push(newUser);
-
-    return res.status(201).send(newUser);
+    console.log(data);
+    const newUser = new User(data);
+    try {
+      const savedUser = await newUser.save();
+      return res.status(201).send(savedUser);
+    } catch (err) {
+      console.log(err);
+      return res.sendStatus(400);
+    }
   }
 );
 
