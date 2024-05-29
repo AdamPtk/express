@@ -11,8 +11,9 @@ import {
   updateUserValidationSchema,
 } from "../utils/validationSchemas.mjs";
 import { usersMock } from "../utils/constants.mjs";
-import { resolveIndexByUserId } from "../utils/middlewares.mjs";
 import { User } from "../mongoose/schemas/user.mjs";
+import { resolveIndexByUserId } from "../utils/middlewares.mjs";
+import { hashPassword } from "../utils/helpers.mjs";
 
 const router = Router();
 
@@ -53,6 +54,8 @@ router.post(
     if (!result.isEmpty()) return res.send(result.array());
 
     const data = matchedData(req);
+    console.log(data);
+    data.password = hashPassword(data.password);
     console.log(data);
     const newUser = new User(data);
     try {
