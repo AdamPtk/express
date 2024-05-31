@@ -22,4 +22,11 @@ router.post("/api/auth/logout", (req, res) => {
   });
 });
 
+router.get("/api/auth/discord", passport.authenticate("discord"));
+router.get(
+  "/api/auth/discord/redirect",
+  passport.authenticate("discord"),
+  (req, res) => res.sendStatus(200)
+);
+
 export default router;
