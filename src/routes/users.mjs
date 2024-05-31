@@ -25,7 +25,7 @@ router.get(
     .withMessage("Must not be empty")
     .isLength({ min: 3, max: 12 })
     .withMessage("Must be at least 3-12 characters"),
-  (req, res) => {
+  async (req, res) => {
     console.log(req.sessionID);
     req.sessionStore.get(req.session.id, (err, sessionData) => {
       if (err) {
@@ -36,13 +36,16 @@ router.get(
     });
     const result = validationResult(req);
     const {
-      query: { filter, value },
+      query: { username },
     } = req;
 
-    if (filter && value)
-      return res.send(usersMock.filter((user) => user[filter].includes(value)));
-
-    return res.send(usersMock);
+    let users;
+    if (username) {
+      users = await User.find({ username: { $regex: username } });
+      return res.send(users);
+    }
+    users = await User.find({});
+    return res.send(users);
   }
 );
 router.post(
@@ -68,11 +71,13 @@ router.post(
   }
 );
 
-router.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
-  const { findUserIndex } = req;
+router.get("/api/users/:id", async (req, res) => {
+  const {
+    params: { id },
+  } = req;
 
-  const findUser = usersMock[findUserIndex];
-  if (!findUser) return res.sendStatus(404);
+  const findUser = await User.findById(id);
+  if (findUser === -1) return res.sendStatus(404);
 
   return res.send(findUser);
 });
@@ -80,19 +85,32 @@ router.get("/api/users/:id", resolveIndexByUserId, (req, res) => {
 router.put(
   "/api/users/:id",
   checkSchema(updateUserValidationSchema),
-  resolveIndexByUserId,
-  (req, res) => {
+  async (req, res) => {
     const result = validationResult(req);
 
     if (!result.isEmpty()) {
       return res.status(400).send({ errors: result.array() });
     }
 
+    const {
+      params: { id },
+    } = req;
     const data = matchedData(req);
-    const { findUserIndex } = req;
 
-    usersMock[findUserIndex] = { id: usersMock[findUserIndex].id, ...data };
-    return res.sendStatus(200);
+    try {
+      const updatedUser = await User.findOneAndReplace({ _id: id }, data, {
+        new: true,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.json(updatedUser);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 );
 
