@@ -117,20 +117,33 @@ router.put(
 router.patch(
   "/api/users/:id",
   checkSchema(modifyUserValidationSchema),
-  resolveIndexByUserId,
-  (req, res) => {
-    const { body, findUserIndex } = req;
+  async (req, res) => {
+    const result = validationResult(req);
 
-    usersMock[findUserIndex] = { ...usersMock[findUserIndex].id, ...body };
-    return res.sendStatus(200);
+    if (!result.isEmpty()) {
+      return res.status(400).send({ errors: result.array() });
+    }
+
+    const {
+      params: { id },
+    } = req;
+    const data = matchedData(req);
+
+    try {
+      const updatedUser = await User.findOneAndUpdate({ _id: id }, data, {
+        new: true,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.json(updatedUser);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 );
-
-router.delete("/api/users/:id", resolveIndexByUserId, (req, res) => {
-  const { findUserIndex } = req;
-
-  usersMock.splice(findUserIndex, 1);
-  return res.sendStatus(200);
-});
 
 export default router;
